@@ -3,7 +3,7 @@
 Plugin Name: Mytory Markdown
 Description: This plugin get markdown file path on dropbox public link, convert markdown to html, and put it to post content.
 Author: mytory
-Version: 1.2.1
+Version: 1.2.2
 Author URI: http://mytory.net
 */
 
@@ -18,10 +18,12 @@ class Mytory_Markdown {
 
     function Mytory_Markdown() {
         add_action('pre_get_posts', array(&$this, 'apply_markdown'));
+        add_filter('the_content', array(&$this, 'attach_error_msg'));
         add_action('add_meta_boxes', array(&$this, 'register_meta_box'));
         add_action('save_post', array(&$this, 'update_post'));
         add_action('wp_ajax_mytory_md_update_editor', array(&$this, 'get_post_content_ajax'));
-        add_filter('the_content', array(&$this, 'attach_error_msg'));
+        add_action('admin_menu', array(&$this, 'add_menu'));
+        add_action('admin_init', array(&$this, 'register_settings'));
     }
 
     /**
@@ -29,11 +31,19 @@ class Mytory_Markdown {
      */
     public function apply_markdown($query) {
 
+        if(get_option('auto_update_only_writer_visits') == 'y' AND ! current_user_can('edit_posts')){
+            return;
+        }
+
         if($query->query_vars['p']){
             $this->post = get_post($query->query_vars['p']);
         }else if($query->query_vars['pagename']){
             $posts = get_posts(array('post_type' => 'any','name' => $query->query_vars['pagename']));
-            $this->post = $posts[0];
+            if(isset($posts[0])){
+                $this->post = $posts[0];    
+            }else{
+                return;
+            }
         }else{
             return;
         }
@@ -350,6 +360,10 @@ class Mytory_Markdown {
                         return false;
                     }
 
+                    if(/dl\.dropboxusercontent\.com/.test(md_path) == false){
+                        alert("URL is not dropbox public link. If you copy share URL, it's mistake. You have to copy public URL from file in Public (and its child) folder.");
+                    }
+
                     var ajax_result = $.get(wp.ajax.settings.url, {
                         action: 'mytory_md_update_editor',
                         md_path: $('#mytory-md-path').val(),
@@ -400,7 +414,25 @@ class Mytory_Markdown {
         }
     }
 
+    function register_settings() { // whitelist options
+        if ( ! current_user_can('activate_plugins') ){
+            return;
+        }
+        register_setting( 'mytory-markdown-option-group', 'auto_update_only_writer_visits' );
+        register_setting( 'mytory-markdown-option-group', 'check_update_per_visits' );
+    }
 
+    function add_menu() {
+        if ( ! current_user_can('activate_plugins') ){
+            return;
+        }
+        add_submenu_page('options-general.php', 'Mytory Markdown Setting', 'Mytory Markdown', 'activate_plugins', 'mytory-markdown', 
+                array(&$this, 'print_setting_page'));
+    }
+
+    function print_setting_page(){
+        include "setting.php";
+    }
 }
 
 $mytory_markdown = new Mytory_Markdown;
