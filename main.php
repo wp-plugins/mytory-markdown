@@ -3,7 +3,7 @@
 Plugin Name: Mytory Markdown
 Description: This plugin get markdown file path on dropbox public link, convert markdown to html, and put it to post content.
 Author: mytory
-Version: 1.2.2
+Version: 1.3
 Author URI: http://mytory.net
 */
 
@@ -15,6 +15,7 @@ class Mytory_Markdown {
     );
 
     var $post;
+    var $worked;
 
     function Mytory_Markdown() {
         add_action('pre_get_posts', array(&$this, 'apply_markdown'));
@@ -31,7 +32,14 @@ class Mytory_Markdown {
      */
     public function apply_markdown($query) {
 
-        if(get_option('auto_update_only_writer_visits') == 'y' AND ! current_user_can('edit_posts')){
+        if($this->worked == true){
+            return;
+        }
+        $this->worked = true;
+
+        $auto_update_only_writer_visits = get_option('auto_update_only_writer_visits');
+
+        if($auto_update_only_writer_visits == 'y' AND ! current_user_can('edit_posts')){
             return;
         }
 
@@ -50,6 +58,21 @@ class Mytory_Markdown {
 
         if( ! is_single()){
             return;
+        }
+
+        // 'Auto update per x visits' feature work only when 'Auto update only writer visits' feature disabled.
+        if($auto_update_only_writer_visits != 'y'){
+
+            // Auto update per x visits.
+            $auto_update_per = get_option('auto_update_per');
+            if($auto_update_per !== FALSE){
+                $visits_count = get_post_meta($this->post->ID, 'mytory_md_visits_count', TRUE);
+                update_post_meta( $this->post->ID, 'mytory_md_visits_count', $visits_count + 1);
+                $visits_count++;
+                if($visits_count % $auto_update_per !== 0){
+                    return;
+                }
+            }
         }
 
         $markdown_path = get_post_meta($this->post->ID, 'mytory_md_path', TRUE);
@@ -334,73 +357,7 @@ class Mytory_Markdown {
         if(isset($_GET['post'])){
             $markdown_path = get_post_meta($_GET['post'], 'mytory_md_path', TRUE);
         }
-        ?>
-        <table class="form-table">
-            <tr>
-                <th scope="row">URL</th>
-                <td>
-                    <input type="url" name="mytory_md_path" id="mytory-md-path" class="large-text" value="<?php echo $markdown_path?>">
-                </td>
-            </tr>
-            <tr>
-                <th><?php _e('Update', 'mytory-markdown')?></th>
-                <td>
-                    <button type="button" class="button js-update-content"><?php _e('Update Editor Content', 'mytory-markdown')?></button>
-                </td>
-            </tr>
-        </table>
-        <script type="text/javascript">
-            jQuery(document).ready(function($){
-                 $('.js-update-content').click(function(){
-
-                    var md_path = $.trim($('#mytory-md-path').val());
-                    if( ! md_path){
-                        alert('Please fill the markdown file URL.');
-                        $('#mytory-md-path').focus();
-                        return false;
-                    }
-
-                    if(/dl\.dropboxusercontent\.com/.test(md_path) == false){
-                        alert("URL is not dropbox public link. If you copy share URL, it's mistake. You have to copy public URL from file in Public (and its child) folder.");
-                    }
-
-                    var ajax_result = $.get(wp.ajax.settings.url, {
-                        action: 'mytory_md_update_editor',
-                        md_path: $('#mytory-md-path').val(),
-                        post_id: $('#post_ID').val()
-                    }, function(res){
-
-                        if(res.error){
-                            alert(res.error_msg);
-                            return false;
-                        }else{
-                            if(res.post_title){
-                                $('#title').val(res.post_title);
-                            }
-                            if($('#content').is(':visible')){
-
-                                // text mode
-                                $('#content').val(res.post_content);
-                            }else{
-
-                                // wysiwyg mode
-                                tinymce.getInstanceById('content').setContent(res.post_content);
-                            }
-                        }
-                    }, 'json');
-
-                    ajax_result.fail(function(){
-                        $('#mytory-md-path').after($('<textarea />', {
-                            'html': ajax_result.responseText,
-                            'class': 'large-text',
-                            'style': 'height: 100px'
-                        }));
-                        alert('Unknown error. Please copy error text on textarea bottom of markdown plugin url input element and send to me(mytory@gmail.com). So, I can recognize the reason for the error.');
-                    });
-                });
-            });
-        </script>
-    <?php
+        include 'meta-box.php';
     }
 
     function update_post($post_id) {
@@ -419,7 +376,7 @@ class Mytory_Markdown {
             return;
         }
         register_setting( 'mytory-markdown-option-group', 'auto_update_only_writer_visits' );
-        register_setting( 'mytory-markdown-option-group', 'check_update_per_visits' );
+        register_setting( 'mytory-markdown-option-group', 'auto_update_per' );
     }
 
     function add_menu() {
