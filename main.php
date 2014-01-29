@@ -3,7 +3,7 @@
 Plugin Name: Mytory Markdown
 Description: This plugin get markdown file path on dropbox public link, convert markdown to html, and put it to post content.
 Author: mytory
-Version: 1.3
+Version: 1.3.1
 Author URI: http://mytory.net
 */
 
@@ -16,8 +16,10 @@ class Mytory_Markdown {
 
     var $post;
     var $worked;
+    var $debug_msg = array();
 
     function Mytory_Markdown() {
+        add_action('plugins_loaded', array(&$this, 'plugin_init'));
         add_action('pre_get_posts', array(&$this, 'apply_markdown'));
         add_filter('the_content', array(&$this, 'attach_error_msg'));
         add_action('add_meta_boxes', array(&$this, 'register_meta_box'));
@@ -25,6 +27,10 @@ class Mytory_Markdown {
         add_action('wp_ajax_mytory_md_update_editor', array(&$this, 'get_post_content_ajax'));
         add_action('admin_menu', array(&$this, 'add_menu'));
         add_action('admin_init', array(&$this, 'register_settings'));
+    }
+
+    function plugin_init() {
+        load_plugin_textdomain('mytory-markdown', false, dirname(plugin_basename( __FILE__ )) .'/lang' ); 
     }
 
     /**
@@ -40,23 +46,48 @@ class Mytory_Markdown {
         $auto_update_only_writer_visits = get_option('auto_update_only_writer_visits');
 
         if($auto_update_only_writer_visits == 'y' AND ! current_user_can('edit_posts')){
+            $this->debug_msg[] = "Auto update only writer or admin visits is Y and current user can't edit posts. So don't work.";
             return;
         }
+
+        ob_start();
+        var_dump($query->query_vars);
+        $this->debug_msg[] = ob_get_contents();
+        ob_end_clean();
 
         if($query->query_vars['p']){
+            // post인 경우
             $this->post = get_post($query->query_vars['p']);
-        }else if($query->query_vars['pagename']){
-            $posts = get_posts(array('post_type' => 'any','name' => $query->query_vars['pagename']));
+            $this->debug_msg[] = "This is post.";
+
+        }else if($query->query_vars['page_id']){
+            // page인 경우
+            $this->post = get_post($query->query_vars['page_id']);
+            $this->debug_msg[] = "This is page.";
+
+        }else if($query->query_vars['pagename'] OR $query->query_vars['name']){
+            
+            // page인 경우 OR slug 형태 주소인 경우.
+            $slug = ($query->query_vars['pagename'] ? $query->query_vars['pagename'] : $query->query_vars['name']);
+            $posts = get_posts(array('post_type' => 'any','name' => $slug));
+            $this->debug_msg[] = "This is page or slug type permalink. Continue.";
+
             if(isset($posts[0])){
-                $this->post = $posts[0];    
+                $this->post = $posts[0];
             }else{
+                $this->debug_msg[] = "There is not post/page that has slug '{$slug}'. So don't work.";
                 return;
             }
+
         }else{
+            // post도 page도 아닌 경우
+            $this->debug_msg[] = "This is not post/page. So don't work.";
             return;
         }
 
-        if( ! is_single()){
+        if( ! is_single() and ! is_page()){
+            // single이 아닌 경우
+            $this->debug_msg[] = "This is not single page. So don't work.";
             return;
         }
 
@@ -65,11 +96,15 @@ class Mytory_Markdown {
 
             // Auto update per x visits.
             $auto_update_per = get_option('auto_update_per');
-            if($auto_update_per !== FALSE){
+            if( $auto_update_per !== FALSE ){
                 $visits_count = get_post_meta($this->post->ID, 'mytory_md_visits_count', TRUE);
+                if( ! $visits_count){
+                    $visits_count = 0;
+                }
                 update_post_meta( $this->post->ID, 'mytory_md_visits_count', $visits_count + 1);
                 $visits_count++;
                 if($visits_count % $auto_update_per !== 0){
+                    $this->debug_msg[] = "'Auto update per' option is enabled. And count is not full. So don't work.";
                     return;
                 }
             }
@@ -78,6 +113,7 @@ class Mytory_Markdown {
         $markdown_path = get_post_meta($this->post->ID, 'mytory_md_path', TRUE);
 
         if( ! $markdown_path){
+            $this->debug_msg[] = "This don't has markdown path. So don't work.";
             return;
         }
         $markdown_path = str_replace('https://', 'http://', $markdown_path);
@@ -101,6 +137,8 @@ class Mytory_Markdown {
                 );
                 wp_update_post($postarr);
             }
+        }else{
+            $this->debug_msg[] = "Etag was not changed. So content has not been updated.";
         }
     }
 
@@ -113,6 +151,15 @@ class Mytory_Markdown {
         if ($this->error['status'] === TRUE AND current_user_can('edit_posts')) {
             $post_content =  "<p>{$this->error['msg']}</p>" . $post_content;
         }
+        if ( ! empty($this->debug_msg) AND current_user_can('edit_posts') AND get_option('debug_msg') == 'yes'){
+            $debug = '<ul>';
+            foreach ($this->debug_msg as $msg) {
+                $debug .= "<li>mytory markdown debug: {$msg}</li>";
+            }
+            $debug .= "</ul>";
+            $post_content = $debug . $post_content;
+        }
+
         return $post_content;
     }
 
@@ -151,7 +198,9 @@ class Mytory_Markdown {
         ini_set('display_errors', 1);
         error_reporting(E_ERROR | E_WARNING);
 
-        $etag_new = $this->_get_etag($_REQUEST['md_path']);
+        $md_path = str_replace('https://', 'http://', $_REQUEST['md_path']);
+
+        $etag_new = $this->_get_etag($md_path);
 
         if( ! $etag_new){
             $res = array(
@@ -166,7 +215,7 @@ class Mytory_Markdown {
 
         update_post_meta($_REQUEST['post_id'], '_mytory_markdown_etag', $etag_new);
 
-        $md_post = $this->_get_post($_REQUEST['md_path']);
+        $md_post = $this->_get_post($md_path);
 
         if( ! $md_post){
             $res = array(
@@ -291,13 +340,13 @@ class Mytory_Markdown {
         if($curl_info['http_code'] != '200'){
             $this->error = array(
                 'status' => TRUE,
-                'msg' => 'Network Error! HTTP STATUS is ' . $curl_info['http_code'],
+                'msg' => __('Network Error! HTTP STATUS is ', 'mytory-markdown') . $curl_info['http_code'],
             );
             if($curl_info['http_code'] == '404'){
                 $this->error['msg'] = 'Incorrect URL. File not found.';
             }
             if($curl_info['http_code'] == 0){
-                $this->error['msg'] = 'Network Error! Maybe, connection error.';
+                $this->error['msg'] = __('Network Error! Maybe, connection error.', 'mytory-markdown');
             }
             return FALSE;
         }
@@ -347,7 +396,7 @@ class Mytory_Markdown {
     function register_meta_box() {
         add_meta_box(
             'mytory-markdown-path',
-            'Markdown File Path',
+            __('Markdown File Path', 'mytory-markdown'),
             array(&$this, 'meta_box_inner')
         );
     }
@@ -377,6 +426,7 @@ class Mytory_Markdown {
         }
         register_setting( 'mytory-markdown-option-group', 'auto_update_only_writer_visits' );
         register_setting( 'mytory-markdown-option-group', 'auto_update_per' );
+        register_setting( 'mytory-markdown-option-group', 'debug_msg' );
     }
 
     function add_menu() {
