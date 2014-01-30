@@ -3,7 +3,7 @@
 Plugin Name: Mytory Markdown
 Description: This plugin get markdown file path on dropbox public link, convert markdown to html, and put it to post content.
 Author: mytory
-Version: 1.3.1
+Version: 1.3.2
 Author URI: http://mytory.net
 */
 
@@ -249,7 +249,7 @@ class Mytory_Markdown {
         // return FALSE that means 'no need to save' to print HTML that is saved.
         // 싱글 페이지가 아니라면 굳이 접속해서 시간낭비할 거 없이 
         // 바로 저장된 HTML을 뿌려줄 수 있도록 save할 필요 없다고 신호를 준다.
-        if (!is_single()) {
+        if (!is_single() AND !is_page()) {
             return FALSE;
         }
 
