@@ -11,7 +11,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Fixed it does not work. 
 
-Dropbox changed its public document must use https. So this plugin did not worked. Than [WickedSik](https://github.com/WickedSik) fix this issue.
+Dropbox changed its public document must use https. So this plugin did not worked. Than [WickedSik](https://github.com/WickedSik) fixed the issue.
 
 = Features =
 
