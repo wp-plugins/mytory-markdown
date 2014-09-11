@@ -3,7 +3,7 @@
 Plugin Name: Mytory Markdown
 Description: This plugin get markdown file path on dropbox public link, convert markdown to html, and put it to post content.
 Author: mytory
-Version: 1.4.0
+Version: 1.4.1
 Author URI: http://mytory.net
 */
 
@@ -461,9 +461,11 @@ class Mytory_Markdown {
 
     function manual_update_button($post_content){
         global $post;
+        
         if ( ! current_user_can('edit_post', get_the_ID())) {
-            return;
+            return $post_content;
         }
+
         ob_start();
         ?>
         <form style="margin: 1em 0; text-align: center" method="post">
