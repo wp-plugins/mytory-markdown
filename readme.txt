@@ -59,7 +59,8 @@ If markdown file has `h1` this plugin puts first `h1` string to post_title. Of c
 
 = 1.4.1 =
 
-Fixed bug that content is not showed for user has not editing permission.
+1. It doesn't show manual update button for post that don't use mytory markdown.
+2. Added memory unlimit code against memory exhausted.
 
 = 1.4.0 =
 
