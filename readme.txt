@@ -8,9 +8,6 @@ Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-== Description ==
-
-This plugin get markdown file path on dropbox public link or github raw content url. It convert markdown file to html, and put it to post content.
 
 == Features ==
 
@@ -26,7 +23,12 @@ This plugin get markdown file path on dropbox public link or github raw content 
 * You can use [markdown extra syntax](http://michelf.ca/projects/php-markdown/extra/).
 
 
-== Notice about Dropbox ==
+== Description ==
+
+This plugin get markdown file path on dropbox public link or github raw content url. It convert markdown file to html, and put it to post content.
+
+
+= Notice about Dropbox =
 
 This plugin use dropbox 'Public link'. Currently only Dropbox Pro and Business users may enable Public folders.
 
@@ -35,7 +37,7 @@ If you are Pro and Business user, [visit this page to 'enable public folder'.](h
 If you are not, you can use GitHub, instead.
 
 
-== Use GitHub for Mytory Markdown ==
+= Use GitHub for Mytory Markdown =
 
 I do not describe github usage. Find it other site.
 
@@ -54,7 +56,7 @@ Next, copy URL and paste it to markdown file path on 'add new post' page in your
 Last, click 'Update Editor Content' button.
 
 
-== Logic ==
+= Logic =
 
 #### On admin page ####
 
