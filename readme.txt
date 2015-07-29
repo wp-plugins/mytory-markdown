@@ -67,7 +67,7 @@ On admin write page, put markdown url path. And click 'update editor' button. So
 
 This plugin get file url(Dropbox public link is recommended). And save header's etag to postmeta and converted html to post_content. Next time on request same post, first this plugin olny get dropbox http etag. If changed etag, get dropbox md content and save again, or get html from post_content.
 
-== This plugin divide title and content from md file ==
+= This plugin divide title and content from md file =
 
 If markdown file has `h1` this plugin puts first `h1` string to post_title. Of course, remove the `h1` from post_content so don't print title twice.
 
