@@ -2,7 +2,7 @@
 Contributors: mytory
 Donate link: http://mytory.net/paypal-donation
 Tags: markdown, md, dropbox
-Tested up to: 4.0
+Tested up to: 4.2.3
 Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -59,7 +59,8 @@ If markdown file has `h1` this plugin puts first `h1` string to post_title. Of c
 
 = 1.4.1 =
 
-Fixed bug that content is not showed for user has not editing permission.
+1. It doesn't show manual update button for post that don't use mytory markdown.
+2. Added memory unlimit code against memory exhausted.
 
 = 1.4.0 =
 
