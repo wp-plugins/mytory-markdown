@@ -9,7 +9,11 @@ License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 
-== Features ==
+== Description ==
+
+This plugin get markdown file path on dropbox public link or github raw content url. It convert markdown file to html, and put it to post content.
+
+= Features =
 
 **[View intro video.](http://youtu.be/mCgzB1aCQgM)**
 
@@ -21,11 +25,6 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 * Plugin only pass converted html content to editor. Saving is WordPress's work. So revision history is preserved.
 * Plugin's compatibility is good. Because this plugin updates only post content html. This doesn't touch `the_content` process(vary plugins touch the process).
 * You can use [markdown extra syntax](http://michelf.ca/projects/php-markdown/extra/).
-
-
-== Description ==
-
-This plugin get markdown file path on dropbox public link or github raw content url. It convert markdown file to html, and put it to post content.
 
 
 = Notice about Dropbox =
